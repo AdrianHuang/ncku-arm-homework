@@ -8,14 +8,15 @@
 	.global lock_mutex
 	.type lock_mutex, function
 lock_mutex:
-	ldr r4, [r0] 	
+	mov r1, locked
 
-	cmp r4, locked
-	beq lock_mutex
+.loop:
+	ldrex r4, [r0] 	
 
-	mov r4, locked
-
-	str r4, [r0]
+	cmp r4, unlocked
+	strexeq r4, r1, [r0]
+	cmp r4, #0
+	bne .loop
 
 	bx lr
 
@@ -24,11 +25,10 @@ lock_mutex:
 	.global unlock_mutex
 	.type unlock_mutex, function
 unlock_mutex:
-	ldr r4, [r0]
+	mov r4, unlocked
 
-	cmp r4, locked
-	moveq r4, unlocked
-
+	@ memory barrier
+	dmb
 	str r4, [r0]
         
 	bx lr
